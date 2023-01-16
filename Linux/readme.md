@@ -1,4 +1,4 @@
-# Linux学習
+# Linux基礎・LAMP環境構築
 ## セクション2
 ### Linuxとは
 * **Linuxカーネル**  
@@ -19,12 +19,27 @@ RadHat Enterprise Linux(RHEL)との互換性を目指した**Linuxディスト�
 * GUI  
 マウスやグラフィックを使用して操作すること
 
-
 ---
 ## セクション3
+#### VirtualBOXのインストール
+* 既存OS上に仮想のPC環境を作成してOSをインストール・動作させられるソフトウェア⇔AWSのEC2のようなもの
+
+* スナップショット(VirtualBox)
+OSの状態を保存することができる(セーブポイントのようなもの)
+
+* CentOS内画面操作中(キャプチャ中)に画面外を操作したい場合
+右Ctrlを押すことで可能
+
+* 作成した仮想マシンにCentOSをインストールしていく
 
 ---
 ## セクション4
+#### Linuxコマンド
+* clear  
+画面のコマンド入力・結果をクリアできる
+
+* 
+
 
 ---
 ## セクション5
@@ -160,7 +175,7 @@ sudo yum install mysql-community-server
 https://blog.proglus.jp/5095/#i リンクを参照
 
 * インストール後の確認  
-mysqld --version(**mysql -vで確認できると思った**)
+mysqld --version
 
 * MySQLへの初期ログインパスワード  
 sudo cat /var/log/mysqld.log | grep 'temporary password'  
@@ -170,7 +185,90 @@ sudo cat /var/log/mysqld.log | grep 'temporary password'
 
 MySQLにログイン
 
-mysql -u root -p  
+**mysql -u root -p**
 
-データベース確認(MySQLの書き方)  
+* データベース確認(MySQLの書き方)  
 show databases
+
+* MySQLの文字コードの設定(UTF-8)  
+sudo vi /etc/my.cnf  
+
+character-set-server = utf8
+
+入力後MySQLを再起動して設定を反映  
+sudo systemctl restart mysqld
+
+OS起動時にMySQLが起動するよう設定  
+sudo systemctl enable mysqld
+
+上記設定の確認  
+systemctl list-unit-files -t service | grep mysqld
+mysqld.serviceが**enabled**になっていれば成功
+
+---
+## セクション6
+#### **WordPressとは**
+オープンソースのブログソフトウェア。コンテンツマネジメントシステム(CMS:Content Management System)のひとつ。(CMSについては別途記載予定)  
+Webサイトを構成する機能(コンテンツ)を一元管理・保存するシステムのこと。(レイアウト情報・画像添付・書式・…等のコンテンツを指す)  
+今回は、数あるCMSのうちのWordPressを使用する
+
+* PHPによって開発されている
+* データベースにMySQLを使用
+
+**↑そのため、これまでLAMP環境を構築してきた**
+
+#### **MySQL側の設定**
+* MySQLにユーザーを追加  
+create user 'mybloguser'@'localhost' identified with mysql_native_password by 'パスワード';  
+※localhostからログインできる、mybloguserという名前のユーザーを追加
+
+* MySQLにデータベースを追加  
+create database wp_myblog;
+
+* 上記で作成したユーザーがwp_myblogを使用できるように設定  
+grant all privileges on wp_myblog.* to 'mybloguser'@'localhost';
+
+* 設定の反映  
+flush privileges;
+
+#### WordPressのインストール
+* インストールするソフトウェアの確認  
+yum list | grep wget
+
+* インストール  
+sudo yum install wget  
+which wgetでインストール先を確認
+
+* wordpressのURLを取得  
+https://ja.wordpress.org/latest-ja.tar.gz
+
+* wordpressインストール用のファイルをダウンロード  
+cd /tmp  
+wget 上記URL
+
+* ダウンロードファイルの解凍  
+sudo tar -zxvf latest-ja.tar.gz -C /var/www/
+
+* 解凍ファイルは/var/www内で確認  
+※Wordpress2の画像
+
+wordpress内に必要なファイルが入っている
+
+wordpressフォルダの所有者をApacheに変更  
+sudo chown -R apache:apache wordpress/
+
+* 設定ファイル編集  
+バックアップ作成を行ってから設定ファイルを編集する  
+sudo cp /etc/httpd/conf/httpd.conf /etc/httpd/conf/httpd.conf.org  
+sudo vi /etc/httpd/conf/httpd.conf
+
+* ドキュメントルートをwordpressに変更(見に行く先を変更)  
+/var/www/html　→　/var/www/wordpress  
+\<Directory "/var/www">　→　\<Directory "/var/www/wordpress">
+
+* 設定反映
+sudo systemctl restart httpd
+
+ブラウザ上で設定を進める  
+※画像  
+
